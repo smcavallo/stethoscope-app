@@ -36,22 +36,25 @@ export default {
 
   async screenLock (root, args, context) {
     const device = await kmd('os', context)
-    // // screen lock creates problems in workspaces
     if (device.system.platform === 'awsWorkspace') {
       return UNKNOWN
     }
 
     const lock = await kmd('screenlock', context)
     const { windowsMaxScreenLockTimeout = 600 } = args
-    const chargingTimeout = parseInt(lock.chargingTimeout, 10)
-    const batteryTimeout = parseInt(lock.batteryTimeout, 10)
+
+    // ScreenSaverIsSecure=1 means the screen saver requires a password (i.e. the machine actually locks).
+    // ScreenSaveActive=1 means the screen saver is enabled.
+    // ScreenSaveTimeOut=0 means "Never" in Windows.
+    const ssEnabled = String(lock.ssActive) === '1'
+    const ssSecure = String(lock.ssSecure) === '1'
+    const timeout = parseInt(lock.screenSaverTimeout, 10)
 
     return (
-      // According to Windows: 0 = Never
-      chargingTimeout !== 0 &&
-      batteryTimeout !== 0 &&
-      chargingTimeout <= windowsMaxScreenLockTimeout &&
-      batteryTimeout <= windowsMaxScreenLockTimeout
+      ssEnabled &&
+      ssSecure &&
+      timeout !== 0 &&
+      timeout <= windowsMaxScreenLockTimeout
     )
   },
 
